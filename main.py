@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import asyncio
 import webbrowser
@@ -19,9 +20,15 @@ load_dotenv()
 
 app = FastAPI()
 
+# Helper for PyInstaller paths
+def get_resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
 # Configuration storage
 CONFIG_FILE = "config.json"
-MODELS_FILE = "models.txt"
+MODELS_FILE = get_resource_path("models.txt")
 TRANSLATIONS_DIR = "translations"
 os.makedirs(TRANSLATIONS_DIR, exist_ok=True)
 
@@ -63,7 +70,8 @@ def save_config(config):
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    with open("templates/index.html", "r", encoding="utf-8") as f:
+    template_path = get_resource_path("templates/index.html")
+    with open(template_path, "r", encoding="utf-8") as f:
         return f.read()
 
 @app.get("/config")
