@@ -37,6 +37,7 @@ class TranslationStatus:
         self.progress = 0
         self.current_step = ""
         self.is_running = False
+        self.should_stop = False
         self.result_file = ""
         self.preview = ""
 
@@ -107,13 +108,29 @@ Ensure the tone is natural and professional.
 Content to translate:
 {chunk}
 """
+    model_name = config["model"]
+    
+    # Prepare API parameters
+    params = {
+        "model": model_name,
+        "messages": [{"role": "user", "content": prompt}]
+    }
+
+    # Handle parameter differences for newer models (o1, o3, gpt-5 etc.)
+    is_reasoning_model = any(m in model_name for m in ["o1", "o3", "gpt-5"])
+    
+    if is_reasoning_model:
+        params["max_completion_tokens"] = config["max_tokens"]
+        # Standard reasoning models MUST use temperature=1 as per OpenAI API rules.
+        # They handle accuracy through internal reasoning tokens, not temperature.
+        params["temperature"] = 1
+    else:
+        params["max_tokens"] = config["max_tokens"]
+        # For standard models (gpt-4o, etc.), use 0 for maximum translation accuracy.
+        params["temperature"] = 0
+
     try:
-        response = await client.chat.completions.create(
-            model=config["model"],
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=config["max_tokens"]
-        )
+        response = await client.chat.completions.create(**params)
         return response.choices[0].message.content
     except Exception as e:
         print(f"Error during translation: {e}")
@@ -132,8 +149,15 @@ async def start_translation(file: UploadFile = File(...)):
     splitter = MarkdownTextSplitter(chunk_size=2000, chunk_overlap=200)
     chunks = splitter.split_text(text)
     
+    status.should_stop = False
     asyncio.create_task(run_translation_task(chunks, file.filename, config))
     return {"status": "started"}
+
+@app.post("/stop")
+async def stop_translation():
+    status.should_stop = True
+    status.current_step = "Stopping translation..."
+    return {"status": "stopping"}
 
 async def run_translation_task(chunks, filename, config):
     global status
@@ -147,6 +171,11 @@ async def run_translation_task(chunks, filename, config):
     
     total = len(chunks)
     for i, chunk in enumerate(chunks):
+        if status.should_stop:
+            status.current_step = "Translation stopped by user."
+            status.is_running = False
+            return
+
         status.current_step = f"Translating chunk {i+1} of {total}..."
         status.progress = int(((i) / total) * 100)
         
