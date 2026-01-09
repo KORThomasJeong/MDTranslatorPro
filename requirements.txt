@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+openai
+langchain-text-splitters
+python-dotenv
+jinja2
+python-multipart
+aiofiles

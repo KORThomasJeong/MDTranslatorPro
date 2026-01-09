@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MD Translator Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 100%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+
+        .main-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .side-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-dim);
+            margin-bottom: 30px;
+        }
+
+        .drop-zone {
+            width: 100%;
+            height: 250px;
+            border: 2px dashed var(--border);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            transform: scale(1.01);
+        }
+
+        .drop-zone svg {
+            width: 64px;
+            height: 64px;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .progress-container {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #6366f1, #a855f7);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .preview-box {
+            margin-top: 30px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #cbd5e1;
+            white-space: pre-wrap;
+            border: 1px solid var(--border);
+            display: none;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-dim);
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: white;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .download-btn {
+            background: #10b981;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .download-btn:hover {
+            background: #059669;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .container {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        #file-name {
+            margin-top: 10px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="main-panel">
+            <h1>MD Translator</h1>
+            <p class="subtitle">AI-powered intelligent Markdown translation.</p>
+
+            <div class="drop-zone" id="drop-zone">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                    </path>
+                </svg>
+                <p>Drag & Drop your .md file here</p>
+                <span id="file-name"></span>
+                <input type="file" id="file-input" accept=".md" style="display: none;">
+            </div>
+
+            <div class="progress-container" id="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="status-text">
+                    <span id="step-text">Ready</span>
+                    <span id="percent-text">0%</span>
+                </div>
+            </div>
+
+            <div class="preview-box" id="preview-box"></div>
+
+            <button class="download-btn" id="download-btn">Download Translated File</button>
+        </div>
+
+        <div class="side-panel">
+            <h2 style="font-size: 1.2rem; margin-bottom: 10px;">Settings</h2>
+
+            <div>
+                <label>OpenAI API Key</label>
+                <input type="password" id="api-key" placeholder="sk-...">
+            </div>
+
+            <div>
+                <label>AI Model</label>
+                <div style="display: flex; gap: 8px; flex-direction: column;">
+                    <select id="model-select">
+                        <!-- Loaded dynamically -->
+                    </select>
+                    <input type="text" id="custom-model" placeholder="Or type custom model name">
+                </div>
+            </div>
+
+            <div>
+                <label>Max Output Tokens</label>
+                <input type="number" id="max-tokens" value="2048">
+            </div>
+
+            <button id="save-settings">Save Settings</button>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileName = document.getElementById('file-name');
+        const progressContainer = document.getElementById('progress-container');
+        const progressFill = document.getElementById('progress-fill');
+        const stepText = document.getElementById('step-text');
+        const percentText = document.getElementById('percent-text');
+        const previewBox = document.getElementById('preview-box');
+        const downloadBtn = document.getElementById('download-btn');
+        const saveSettings = document.getElementById('save-settings');
+
+        const modelSelect = document.getElementById('model-select');
+        const customModelInput = document.getElementById('custom-model');
+
+        // Load config
+        async function loadConfig() {
+            const res = await fetch('/config');
+            const data = await res.json();
+            const config = data.config;
+            const models = data.available_models;
+
+            // Populate model select
+            modelSelect.innerHTML = '';
+            models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = opt.textContent = m;
+                modelSelect.appendChild(opt);
+            });
+
+            document.getElementById('api-key').value = config.api_key;
+            document.getElementById('max-tokens').value = config.max_tokens;
+
+            if (models.includes(config.model)) {
+                modelSelect.value = config.model;
+            } else {
+                customModelInput.value = config.model;
+            }
+        }
+        loadConfig();
+
+        saveSettings.onclick = async () => {
+            const selectedModel = modelSelect.value;
+            const customModel = customModelInput.value.trim();
+            const finalModel = customModel || selectedModel;
+
+            const formData = new FormData();
+            formData.append('api_key', document.getElementById('api-key').value);
+            formData.append('model', finalModel);
+            formData.append('max_tokens', document.getElementById('max-tokens').value);
+
+            await fetch('/config', { method: 'POST', body: formData });
+
+            // Refresh config to update model list if needed (though here we just save)
+            alert('Settings saved!');
+            loadConfig();
+        };
+
+        dropZone.onclick = () => fileInput.click();
+
+        dropZone.ondragover = (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        };
+
+        dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        };
+
+        fileInput.onchange = () => {
+            if (fileInput.files.length) {
+                handleFile(fileInput.files[0]);
+            }
+        };
+
+        function handleFile(file) {
+            if (!file.name.endsWith('.md')) {
+                alert('Please upload a .md file');
+                return;
+            }
+            fileName.innerText = file.name;
+            startTranslation(file);
+        }
+
+        async function startTranslation(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch('/translate', { method: 'POST', body: formData });
+            if (!res.ok) {
+                const err = await res.json();
+                alert(err.detail);
+                return;
+            }
+
+            // Start polling
+            progressContainer.style.display = 'block';
+            previewBox.style.display = 'block';
+            downloadBtn.style.display = 'none';
+            pollStatus();
+        }
+
+        let pollInterval;
+        function pollStatus() {
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(async () => {
+                const res = await fetch('/status');
+                const data = await res.json();
+
+                progressFill.style.width = data.progress + '%';
+                percentText.innerText = data.progress + '%';
+                stepText.innerText = data.current_step;
+                previewBox.innerText = data.preview;
+
+                if (!data.is_running && data.progress === 100) {
+                    clearInterval(pollInterval);
+                    downloadBtn.style.display = 'block';
+                    downloadBtn.onclick = () => {
+                        window.location.href = `/download/${data.result_file}`;
+                    };
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+
+</html>
